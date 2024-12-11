@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Author: Shawn Saetern
+# Comments: A flexible script that uses regular expressions to match and replace
+# patterns in newline-delimited text input. The script supports two modes:
+# 1. Grep mode: Prints lines matching a name pattern.
+# 2. AWK/SED mode: Replaces occurrences of a name pattern with a given replacement.
+
+
+usage() {
+    echo "Usage: $0 [-g <name-pattern>] [-r <replacement-text>] [-h]"
+    echo "  -g <name-pattern>   Literal name pattern to match."
+    echo "  -r <replacement-text> Optional replacement text for substitution."
+    echo "  -h                   Display this help message."
+    exit 1
+}
+
+
+name_pattern=""
+replacement_text=""
+mode=""
+
+while getopts "g:r:h" opt; do
+    case "$opt" in
+        g)
+            name_pattern="$OPTARG"
+            mode="grep"
+            ;;
+        r)
+            replacement_text="$OPTARG"
+            mode="awk_sed"
+            ;;
+        h)
+            usage
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+if [[ -z "$name_pattern" ]]; then
+    echo "Error: A name pattern (-g) must be provided."
+    usage
+fi
+
+if [[ "$mode" == "awk_sed" && -z "$replacement_text" ]]; then
+    echo "Error: A replacement text (-r) must be provided for replacement mode."
+    usage
+fi
+
+grep_mode() {
+    echo "Matching lines with pattern: $name_pattern"
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ $name_pattern ]]; then
+            echo "$line"
+        fi
+    done
+}
+
+awk_sed_mode() {
+    echo "Replacing occurrences of '$name_pattern' with '$replacement_text'"
+
+    sed -E "s/$name_pattern/$replacement_text/g"
+}
+
+if [[ "$mode" == "grep" ]]; then
+    echo "Enter input data (Ctrl+D to finish):"
+    grep_mode
+elif [[ "$mode" == "awk_sed" ]]; then
+    echo "Enter input data (Ctrl+D to finish):"
+    awk_sed_mode
+else
+    echo "Error: Invalid mode selected."
+    usage
+fi
+
